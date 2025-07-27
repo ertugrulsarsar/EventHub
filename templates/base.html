@@ -1,0 +1,1298 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EventHub - Etkinlik Yönetimi{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#007bff',
+                            dark: '#0056b3',
+                        },
+                        secondary: {
+                            DEFAULT: '#28a745',
+                            dark: '#1e7e34',
+                        },
+                        warning: '#fd7e14',
+                        danger: '#dc3545',
+                        neutral: {
+                            DEFAULT: '#6c757d',
+                            light: '#f8f9fa',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .event-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .skeleton {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+        
+        .tab-active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #007bff;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0056b3;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="flex items-center space-x-2">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"></path>
+                            <path d="M9 13h2v5a1 1 0 11-2 0v-5z"></path>
+                        </svg>
+                        <span class="text-xl font-bold text-gray-800">EventHub</span>
+                    </a>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="text-gray-700 hover:text-primary font-medium">Etkinlikler</a>
+                        <a href="{% url 'etkinlikler:yaklasan_etkinlikler' %}" class="text-gray-700 hover:text-primary font-medium">Yaklaşan</a>
+                        <a href="{% url 'etkinlikler:yakindaki_etkinlikler' %}" class="text-gray-700 hover:text-primary font-medium">
+                            <i class="fas fa-map-marker-alt mr-1"></i>Yakındaki
+                        </a>
+                        <a href="{% url 'etkinlikler:etkinlik_ara' %}" class="text-gray-700 hover:text-primary font-medium">Ara</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:block">
+                        <div class="relative">
+                            <input type="text" placeholder="Etkinlik ara..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="flex items-center space-x-2">
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-primary transition-colors">
+                                <i class="fas fa-user-circle text-xl"></i>
+                                <span class="hidden sm:block">{{ user.get_full_name|default:user.username }}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                {% if user.organizator %}
+                                <a href="{% url 'organizatorler:profil' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-user mr-2"></i> Organizatör Profilim
+                                </a>
+                                <a href="{% url 'organizatorler:etkinliklerim' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-calendar-check mr-2"></i> Etkinliklerim
+                                </a>
+                                {% else %}
+                                <a href="{% url 'katilimcilar:profil' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-user mr-2"></i> Katılımcı Profilim
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'kayitlar:katilimlarim' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-list-check mr-2"></i> Katılımlarım
+                                </a>
+                                <hr class="my-1">
+                                <a href="{% url 'organizatorler:logout' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Çıkış Yap
+                                </a>
+                            </div>
+                        </div>
+                        {% if user.organizator %}
+                        <button id="createEventBtn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors">
+                            <i class="fas fa-plus mr-2"></i> Etkinlik Oluştur
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="flex items-center space-x-2">
+                        <button id="loginBtn" class="px-4 py-2 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors">Giriş Yap</button>
+                        <button id="participantRegisterBtn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors">Katılımcı Ol</button>
+                    </div>
+                    {% endif %}
+                    
+                    <button id="mobileMenuBtn" class="md:hidden text-gray-700">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="md:hidden hidden pb-4">
+                <div class="flex flex-col space-y-3">
+                    <div class="relative mb-3">
+                        <input type="text" placeholder="Etkinlik ara..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div class="absolute left-3 top-2.5 text-gray-400">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="text-gray-700 hover:text-primary font-medium py-2">Etkinlikler</a>
+                    <a href="{% url 'etkinlikler:yaklasan_etkinlikler' %}" class="text-gray-700 hover:text-primary font-medium py-2">Yaklaşan</a>
+                    <a href="{% url 'etkinlikler:etkinlik_ara' %}" class="text-gray-700 hover:text-primary font-medium py-2">Ara</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        <!-- Messages -->
+        {% if messages %}
+        <div class="container mx-auto px-4 mt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-4 p-4 rounded-lg border-l-4 {% if message.tags == 'success' %}bg-green-50 border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-50 border-red-400 text-red-700{% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-400 text-yellow-700{% elif message.tags == 'info' %}bg-blue-50 border-blue-400 text-blue-700{% endif %}">
+                <div class="flex items-center">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle mr-3"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-triangle mr-3"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-circle mr-3"></i>
+                    {% elif message.tags == 'info' %}
+                        <i class="fas fa-info-circle mr-3"></i>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                    <button type="button" class="ml-auto text-lg hover:opacity-70" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-6">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z"></path>
+                            <path d="M9 13h2v5a1 1 0 11-2 0v-5z"></path>
+                        </svg>
+                        <span class="text-xl font-bold">EventHub</span>
+                    </div>
+                    <p class="text-gray-400 mb-6">Etkinlikleri keşfet, biletini al ve unutulmaz anılar biriktir.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-6">Hızlı Linkler</h3>
+                    <ul class="space-y-3">
+                        <li><a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="text-gray-400 hover:text-white transition-colors">Ana Sayfa</a></li>
+                        <li><a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="text-gray-400 hover:text-white transition-colors">Etkinlikler</a></li>
+                        <li><a href="{% url 'etkinlikler:yaklasan_etkinlikler' %}" class="text-gray-400 hover:text-white transition-colors">Yaklaşan</a></li>
+                        <li><a href="{% url 'etkinlikler:etkinlik_ara' %}" class="text-gray-400 hover:text-white transition-colors">Ara</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-6">Destek</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Yardım Merkezi</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">SSS</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">İletişim</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Gizlilik Politikası</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Kullanım Şartları</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-6">İletişim</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-map-marker-alt mt-1 text-gray-400"></i>
+                            <span class="text-gray-400">Osmangazi, Bursa, Türkiye</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-phone-alt text-gray-400"></i>
+                            <span class="text-gray-400">+90 545 361 74 56</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-envelope text-gray-400"></i>
+                            <span class="text-gray-400">info@eventhub.com</span>
+                        </li>
+                    </ul>
+                    <div class="mt-6">
+                        <h4 class="text-sm font-semibold mb-3">Bültenimize Abone Ol</h4>
+                        <div class="flex">
+                            <input type="email" placeholder="E-posta adresin" class="px-4 py-2 rounded-l-lg focus:outline-none text-gray-800 w-full">
+                            <button class="bg-primary hover:bg-primary-dark px-4 py-2 rounded-r-lg transition-colors">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2024 EventHub. Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Giriş Yap</h2>
+                <button id="closeLoginModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="loginForm">
+                {% csrf_token %}
+                
+                <!-- Error Message -->
+                <div id="loginError" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p id="loginErrorMessage" class="text-sm text-red-700"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Success Message -->
+                <div id="loginSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p id="loginSuccessMessage" class="text-sm text-green-700"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="username" class="block text-gray-700 font-medium mb-2">Kullanıcı Adı</label>
+                    <input type="text" id="username" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Kullanıcı adınız" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 font-medium mb-2">Şifre</label>
+                    <input type="password" id="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••" required>
+                </div>
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                        <label for="remember" class="ml-2 block text-sm text-gray-700">Beni hatırla</label>
+                    </div>
+                    <a href="#" class="text-sm text-primary hover:text-primary-dark">Şifremi unuttum</a>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">Giriş Yap</button>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">Hesabın yok mu? <button type="button" id="switchToRegisterFromLogin" class="text-primary hover:text-primary-dark font-medium">Kayıt ol</button></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Kayıt Ol</h2>
+                <button id="closeRegisterModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="mb-6">
+                <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button id="participantTab" class="flex-1 py-3 px-4 text-center font-medium tab-active">Katılımcı</button>
+                    <button id="organizerTab" class="flex-1 py-3 px-4 text-center font-medium text-gray-500">Organizatör</button>
+                </div>
+            </div>
+            <form id="participantForm" method="post" action="{% url 'katilimcilar:kayit' %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="regName" class="block text-gray-700 font-medium mb-2">Ad Soyad</label>
+                    <input type="text" id="regName" name="first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Ad Soyad" required>
+                </div>
+                <div class="mb-4">
+                    <label for="regEmail" class="block text-gray-700 font-medium mb-2">E-posta</label>
+                    <input type="email" id="regEmail" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="ornek@mail.com" required>
+                </div>
+                <div class="mb-4">
+                    <label for="regUsername" class="block text-gray-700 font-medium mb-2">Kullanıcı Adı</label>
+                    <input type="text" id="regUsername" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="kullanici_adi" required>
+                </div>
+                <div class="mb-6">
+                    <label for="regPassword" class="block text-gray-700 font-medium mb-2">Şifre</label>
+                    <input type="password" id="regPassword" name="password1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••" required>
+                </div>
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="terms" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" required>
+                    <label for="terms" class="ml-2 block text-sm text-gray-700">
+                        <span>Kullanım şartlarını ve gizlilik politikasını kabul ediyorum</span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">Kayıt Ol</button>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">Zaten hesabın var mı? <a href="#" class="text-primary hover:text-primary-dark font-medium">Giriş yap</a></p>
+                </div>
+            </form>
+            <form id="organizerForm" method="post" action="{% url 'organizatorler:kayit' %}" class="hidden">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="orgName" class="block text-gray-700 font-medium mb-2">Ad Soyad</label>
+                    <input type="text" id="orgName" name="first_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Ad Soyad" required>
+                </div>
+                <div class="mb-4">
+                    <label for="orgEmail" class="block text-gray-700 font-medium mb-2">E-posta</label>
+                    <input type="email" id="orgEmail" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="ornek@mail.com" required>
+                </div>
+                <div class="mb-4">
+                    <label for="orgCompany" class="block text-gray-700 font-medium mb-2">Şirket/Organizasyon Adı</label>
+                    <input type="text" id="orgCompany" name="organizasyon_adi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Şirket/Organizasyon Adı">
+                </div>
+                <div class="mb-4">
+                    <label for="orgUsername" class="block text-gray-700 font-medium mb-2">Kullanıcı Adı</label>
+                    <input type="text" id="orgUsername" name="username" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="kullanici_adi" required>
+                </div>
+                <div class="mb-6">
+                    <label for="orgPassword" class="block text-gray-700 font-medium mb-2">Şifre</label>
+                    <input type="password" id="orgPassword" name="password1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••" required>
+                </div>
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="orgTerms" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" required>
+                    <label for="orgTerms" class="ml-2 block text-sm text-gray-700">
+                        <span>Kullanım şartlarını ve gizlilik politikasını kabul ediyorum</span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">Organizatör Olarak Kayıt Ol</button>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">Zaten hesabın var mı? <a href="#" class="text-primary hover:text-primary-dark font-medium">Giriş yap</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Event Modal - Sadece Organizatörler İçin -->
+    {% if user.organizator %}
+    <div id="createEventModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-8 max-w-5xl w-full mx-4 max-h-[95vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Etkinlik Oluştur</h2>
+                <button id="closeCreateEventModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="mb-6">
+                <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button id="tabBasic" class="flex-1 py-3 px-4 text-center font-medium tab-active">Temel Bilgiler</button>
+                    <button id="tabDetails" class="flex-1 py-3 px-4 text-center font-medium text-gray-500">Detaylar</button>
+                    <button id="tabLocation" class="flex-1 py-3 px-4 text-center font-medium text-gray-500">Konum & Tarih</button>
+                </div>
+            </div>
+            
+            <!-- Bilgi Kutusu -->
+            <div id="infoBox" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                    <span class="text-blue-700 text-sm">Zorunlu alanlar otomatik olarak doldurulmuştur. İhtiyacınıza göre düzenleyebilirsiniz.</span>
+                </div>
+            </div>
+            
+            <form method="post" action="{% url 'etkinlikler:etkinlik_olustur' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Temel Bilgiler Tab -->
+                <div id="basicTab" class="tab-content">
+                <div class="mb-6">
+                    <label for="eventTitle" class="block text-gray-700 font-medium mb-2">Etkinlik Başlığı*</label>
+                    <input type="text" id="eventTitle" name="baslik" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik başlığını girin" required>
+                        <p class="text-sm text-gray-500 mt-1">Etkinliğin başlığını girin (maksimum 200 karakter)</p>
+                </div>
+                    
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="eventCategory" class="block text-gray-700 font-medium mb-2">Kategori*</label>
+                        <select id="eventCategory" name="kategori" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                            <option value="">Kategori seçin</option>
+                            {% for kategori in kategoriler %}
+                            <option value="{{ kategori.id }}">{{ kategori.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="eventType" class="block text-gray-700 font-medium mb-2">Etkinlik Tipi*</label>
+                        <select id="eventType" name="tip" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                            <option value="">Etkinlik tipi seçin</option>
+                            <option value="conference">Konferans</option>
+                            <option value="concert">Konser</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="exhibition">Sergi</option>
+                            <option value="other">Diğer</option>
+                        </select>
+                    </div>
+                </div>
+                    
+                <div class="mb-6">
+                        <label for="eventDescription" class="block text-gray-700 font-medium mb-2">Açıklama</label>
+                        <textarea id="eventDescription" name="aciklama" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik hakkında detaylı açıklama..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Detaylar Tab -->
+                <div id="detailsTab" class="tab-content hidden">
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">Etkinlik Resmi</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <div class="mx-auto w-16 h-16 text-gray-400 mb-4">
+                            <i class="fas fa-cloud-upload-alt text-4xl"></i>
+                        </div>
+                        <p class="text-gray-700 mb-2">Görseli sürükleyip bırakın veya</p>
+                            <input type="file" id="eventImage" name="resim" accept="image/*" class="hidden">
+                            <button type="button" id="selectFileBtn" class="text-primary hover:text-primary-dark font-medium">Dosya Seçin</button>
+                        <p class="text-xs text-gray-500 mt-2">PNG, JPG, GIF - Maks 5MB</p>
+                    </div>
+                </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="eventMaxParticipants" class="block text-gray-700 font-medium mb-2">Maksimum Katılımcı*</label>
+                            <input type="number" id="eventMaxParticipants" name="maksimum_katilimci" value="100" min="1" max="10000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label for="eventStatus" class="block text-gray-700 font-medium mb-2">Durum*</label>
+                            <select id="eventStatus" name="durum" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                                <option value="planlandi" selected>Planlandı</option>
+                                <option value="aktif">Aktif</option>
+                                <option value="tamamlandi">Tamamlandı</option>
+                                <option value="iptal">İptal</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="eventPrice" class="block text-gray-700 font-medium mb-2">Ücret (TL)</label>
+                        <input type="number" id="eventPrice" name="ucret" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="0.00">
+                        <p class="text-sm text-gray-500 mt-1">Ücretsiz etkinlik için 0 bırakın</p>
+                    </div>
+                </div>
+                
+                <!-- Konum & Tarih Tab -->
+                <div id="locationTab" class="tab-content hidden">
+                    <div class="mb-6">
+                        <label for="eventLocation" class="block text-gray-700 font-medium mb-2">Konum*</label>
+                        <input type="text" id="eventLocation" name="yer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik konumunu girin" required>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="eventAddress" class="block text-gray-700 font-medium mb-2">Adres*</label>
+                        <textarea id="eventAddress" name="adres" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Detaylı adres bilgisi..." required>Adres bilgisi girilecek</textarea>
+                    </div>
+                    
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="eventStartDate" class="block text-gray-700 font-medium mb-2">Başlangıç Tarihi*</label>
+                        <input type="date" id="eventStartDate" name="baslangic_tarihi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label for="eventStartTime" class="block text-gray-700 font-medium mb-2">Başlangıç Saati*</label>
+                        <input type="time" id="eventStartTime" name="baslangic_saati" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                </div>
+                    
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="eventEndDate" class="block text-gray-700 font-medium mb-2">Bitiş Tarihi</label>
+                        <input type="date" id="eventEndDate" name="bitis_tarihi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="eventEndTime" class="block text-gray-700 font-medium mb-2">Bitiş Saati</label>
+                        <input type="time" id="eventEndTime" name="bitis_saati" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <button type="button" id="prevTab" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors hidden">
+                        <i class="fas fa-arrow-left mr-2"></i>Önceki
+                    </button>
+                    <div class="flex space-x-4">
+                        <button type="button" id="closeCreateEventModal" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">İptal</button>
+                        <button type="button" id="nextTab" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                            İleri<i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        <button type="submit" id="submitForm" class="px-6 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors hidden">
+                            <i class="fas fa-check mr-2"></i>Etkinlik Oluştur
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+        <div class="bg-white rounded-xl p-8 max-w-5xl w-full mx-4 max-h-[95vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Etkinlik Oluştur</h2>
+                <button id="closeCreateEventModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                </div>
+            <div class="mb-6">
+                <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button id="tabBasic" class="flex-1 py-3 px-4 text-center font-medium tab-active">Temel Bilgiler</button>
+                    <button id="tabDetails" class="flex-1 py-3 px-4 text-center font-medium text-gray-500">Detaylar</button>
+                    <button id="tabLocation" class="flex-1 py-3 px-4 text-center font-medium text-gray-500">Konum & Tarih</button>
+                </div>
+            </div>
+            
+            <!-- Bilgi Kutusu -->
+            <div id="infoBox" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                    <span class="text-blue-700 text-sm">Zorunlu alanlar otomatik olarak doldurulmuştur. İhtiyacınıza göre düzenleyebilirsiniz.</span>
+                </div>
+            </div>
+            
+            <form method="post" action="{% url 'etkinlikler:etkinlik_olustur' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Temel Bilgiler Tab -->
+                <div id="basicTab" class="tab-content">
+                    <div class="mb-6">
+                        <label for="eventTitle" class="block text-gray-700 font-medium mb-2">Etkinlik Başlığı*</label>
+                        <input type="text" id="eventTitle" name="baslik" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik başlığını girin" required>
+                        <p class="text-sm text-gray-500 mt-1">Etkinliğin başlığını girin (maksimum 200 karakter)</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="eventCategory" class="block text-gray-700 font-medium mb-2">Kategori*</label>
+                            <select id="eventCategory" name="kategori" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                                <option value="">Kategori seçin</option>
+                                {% for kategori in kategoriler %}
+                                <option value="{{ kategori.id }}">{{ kategori.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="eventType" class="block text-gray-700 font-medium mb-2">Etkinlik Tipi*</label>
+                            <select id="eventType" name="tip" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                                <option value="">Etkinlik tipi seçin</option>
+                                <option value="conference">Konferans</option>
+                                <option value="concert">Konser</option>
+                                <option value="workshop">Workshop</option>
+                                <option value="exhibition">Sergi</option>
+                                <option value="other">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="eventDescription" class="block text-gray-700 font-medium mb-2">Açıklama</label>
+                        <textarea id="eventDescription" name="aciklama" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik hakkında detaylı açıklama..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Detaylar Tab -->
+                <div id="detailsTab" class="tab-content hidden">
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">Etkinlik Resmi</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <div class="mx-auto w-16 h-16 text-gray-400 mb-4">
+                                <i class="fas fa-cloud-upload-alt text-4xl"></i>
+                            </div>
+                            <p class="text-gray-700 mb-2">Görseli sürükleyip bırakın veya</p>
+                            <input type="file" id="eventImage" name="resim" accept="image/*" class="hidden">
+                            <button type="button" id="selectFileBtn" class="text-primary hover:text-primary-dark font-medium">Dosya Seçin</button>
+                            <p class="text-xs text-gray-500 mt-2">PNG, JPG, GIF - Maks 5MB</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="eventMaxParticipants" class="block text-gray-700 font-medium mb-2">Maksimum Katılımcı*</label>
+                            <input type="number" id="eventMaxParticipants" name="maksimum_katilimci" value="100" min="1" max="10000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label for="eventStatus" class="block text-gray-700 font-medium mb-2">Durum*</label>
+                            <select id="eventStatus" name="durum" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                                <option value="planlandi" selected>Planlandı</option>
+                                <option value="aktif">Aktif</option>
+                                <option value="tamamlandi">Tamamlandı</option>
+                                <option value="iptal">İptal</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="eventPrice" class="block text-gray-700 font-medium mb-2">Ücret (TL)</label>
+                        <input type="number" id="eventPrice" name="ucret" min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="0.00">
+                        <p class="text-sm text-gray-500 mt-1">Ücretsiz etkinlik için 0 bırakın</p>
+                    </div>
+                </div>
+                
+                <!-- Konum & Tarih Tab -->
+                <div id="locationTab" class="tab-content hidden">
+                <div class="mb-6">
+                    <label for="eventLocation" class="block text-gray-700 font-medium mb-2">Konum*</label>
+                    <input type="text" id="eventLocation" name="yer" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Etkinlik konumunu girin" required>
+                </div>
+                    
+                <div class="mb-6">
+                        <label for="eventAddress" class="block text-gray-700 font-medium mb-2">Adres*</label>
+                        <textarea id="eventAddress" name="adres" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Detaylı adres bilgisi..." required>Adres bilgisi girilecek</textarea>
+                </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="eventStartDate" class="block text-gray-700 font-medium mb-2">Başlangıç Tarihi*</label>
+                            <input type="date" id="eventStartDate" name="baslangic_tarihi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label for="eventStartTime" class="block text-gray-700 font-medium mb-2">Başlangıç Saati*</label>
+                            <input type="time" id="eventStartTime" name="baslangic_saati" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="eventEndDate" class="block text-gray-700 font-medium mb-2">Bitiş Tarihi</label>
+                            <input type="date" id="eventEndDate" name="bitis_tarihi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="eventEndTime" class="block text-gray-700 font-medium mb-2">Bitiş Saati</label>
+                            <input type="time" id="eventEndTime" name="bitis_saati" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation Buttons -->
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <button type="button" id="prevTab" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors hidden">
+                        <i class="fas fa-arrow-left mr-2"></i>Önceki
+                    </button>
+                    <div class="flex space-x-4">
+                        <button type="button" id="closeCreateEventModal" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">İptal</button>
+                        <button type="button" id="nextTab" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                            İleri<i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        <button type="submit" id="submitForm" class="px-6 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors hidden">
+                            <i class="fas fa-check mr-2"></i>Etkinlik Oluştur
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Katılımcı Kayıt Modal -->
+    <div id="participantRegisterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        <i class="fas fa-user-plus text-secondary"></i>
+                        Katılımcı Kayıt
+                    </h3>
+                    <button id="closeParticipantRegisterModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="text-gray-600 mt-2">Etkinliklere katılmak için ücretsiz hesap oluşturun</p>
+            </div>
+            
+            <form id="participantRegisterForm" class="p-6">
+                {% csrf_token %}
+                
+                <!-- Error Message -->
+                <div id="participantRegisterError" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p id="participantRegisterErrorMessage" class="text-sm text-red-700"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Success Message -->
+                <div id="participantRegisterSuccess" class="hidden bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p id="participantRegisterSuccessMessage" class="text-sm text-green-700"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="participantFirstName" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Ad Soyad <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="participantFirstName" name="first_name" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300"
+                               placeholder="Adınızı ve soyadınızı girin">
+                    </div>
+                    
+                    <div>
+                        <label for="participantEmail" class="block text-sm font-semibold text-gray-700 mb-2">
+                            E-posta <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" id="participantEmail" name="email" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300"
+                               placeholder="E-posta adresinizi girin">
+                    </div>
+                    
+                    <div>
+                        <label for="participantUsername" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Kullanıcı Adı <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="participantUsername" name="username" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300"
+                               placeholder="Kullanıcı adınızı girin">
+                    </div>
+                    
+                    <div>
+                        <label for="participantPassword1" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Şifre <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="participantPassword1" name="password1" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300"
+                               placeholder="Şifrenizi girin">
+                    </div>
+                    
+                    <div>
+                        <label for="participantPassword2" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Şifre (Tekrar) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="participantPassword2" name="password2" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300"
+                               placeholder="Şifrenizi tekrar girin">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <button type="submit" 
+                            class="w-full px-6 py-3 bg-gradient-to-r from-secondary to-secondary-dark text-white font-semibold rounded-lg hover:from-secondary-dark hover:to-secondary transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <i class="fas fa-user-plus"></i>
+                        Katılımcı Olarak Kayıt Ol
+                    </button>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-600">
+                        Zaten hesabın var mı? 
+                        <button type="button" id="switchToLoginFromParticipant" class="font-medium text-secondary hover:text-secondary-dark">
+                            Giriş yap
+                        </button>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Login modal
+        const loginBtn = document.getElementById('loginBtn');
+        const loginModal = document.getElementById('loginModal');
+        const closeLoginModal = document.getElementById('closeLoginModal');
+        const loginForm = document.getElementById('loginForm');
+        
+        if (loginBtn && loginModal && closeLoginModal) {
+            loginBtn.addEventListener('click', () => {
+                loginModal.classList.remove('hidden');
+                // Reset form
+                if (loginForm) {
+                    loginForm.reset();
+                    // Hide messages
+                    document.getElementById('loginError').classList.add('hidden');
+                    document.getElementById('loginSuccess').classList.add('hidden');
+                }
+            });
+            
+            closeLoginModal.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+            });
+        }
+        
+        // Switch to register from login
+        const switchToRegisterFromLogin = document.getElementById('switchToRegisterFromLogin');
+        if (switchToRegisterFromLogin) {
+            switchToRegisterFromLogin.addEventListener('click', () => {
+                loginModal.classList.add('hidden');
+                participantRegisterModal.classList.remove('hidden');
+            });
+        }
+        
+        // Login form submission
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(loginForm);
+                
+                fetch('/organizatorler/login/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide both messages first
+                    document.getElementById('loginError').classList.add('hidden');
+                    document.getElementById('loginSuccess').classList.add('hidden');
+                    
+                    if (data.success) {
+                        // Show success message
+                        document.getElementById('loginSuccessMessage').textContent = data.message;
+                        document.getElementById('loginSuccess').classList.remove('hidden');
+                        
+                        // Redirect after 2 seconds
+                        setTimeout(() => {
+                            if (data.redirect_url) {
+                                window.location.href = data.redirect_url;
+                            }
+                        }, 2000);
+                    } else {
+                        // Show error message
+                        document.getElementById('loginErrorMessage').textContent = data.message;
+                        document.getElementById('loginError').classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Login error:', error);
+                    // Show generic error
+                    document.getElementById('loginErrorMessage').textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+                    document.getElementById('loginError').classList.remove('hidden');
+                });
+            });
+        }
+        
+        // Close login modal when clicking outside
+        if (loginModal) {
+            loginModal.addEventListener('click', (e) => {
+                if (e.target === loginModal) {
+                    loginModal.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Register modal
+        const registerBtn = document.getElementById('registerBtn');
+        const registerModal = document.getElementById('registerModal');
+        const closeRegisterModal = document.getElementById('closeRegisterModal');
+        
+        if (registerBtn && registerModal && closeRegisterModal) {
+            registerBtn.addEventListener('click', () => {
+                registerModal.classList.remove('hidden');
+            });
+            
+            closeRegisterModal.addEventListener('click', () => {
+                registerModal.classList.add('hidden');
+            });
+        }
+        
+        // Register tabs
+        const participantTab = document.getElementById('participantTab');
+        const organizerTab = document.getElementById('organizerTab');
+        const participantForm = document.getElementById('participantForm');
+        const organizerForm = document.getElementById('organizerForm');
+        
+        if (participantTab && organizerTab && participantForm && organizerForm) {
+            participantTab.addEventListener('click', () => {
+                participantTab.classList.add('tab-active');
+                participantTab.classList.remove('text-gray-500');
+                organizerTab.classList.remove('tab-active');
+                organizerTab.classList.add('text-gray-500');
+                participantForm.classList.remove('hidden');
+                organizerForm.classList.add('hidden');
+            });
+            
+            organizerTab.addEventListener('click', () => {
+                organizerTab.classList.add('tab-active');
+                organizerTab.classList.remove('text-gray-500');
+                participantTab.classList.remove('tab-active');
+                participantTab.classList.add('text-gray-500');
+                organizerForm.classList.remove('hidden');
+                participantForm.classList.add('hidden');
+            });
+        }
+        
+        // Create Event modal - Sadece Organizatörler İçin
+        const createEventBtn = document.getElementById('createEventBtn');
+        const createEventModal = document.getElementById('createEventModal');
+        const closeCreateEventModal = document.getElementById('closeCreateEventModal');
+        const createEventForm = document.querySelector('#createEventModal form');
+        
+        // Sadece organizatör ise modal işlevselliğini etkinleştir
+        if (createEventBtn && createEventModal && closeCreateEventModal) {
+            createEventBtn.addEventListener('click', () => {
+                createEventModal.classList.remove('hidden');
+                
+                // Reset form and set defaults
+                const form = document.querySelector('#createEventModal form');
+                if (form) {
+                    form.reset();
+                    
+                    // Set default values
+                    const maxParticipants = document.getElementById('eventMaxParticipants');
+                    const status = document.getElementById('eventStatus');
+                    const address = document.getElementById('eventAddress');
+                    
+                    if (maxParticipants) maxParticipants.value = '100';
+                    if (status) status.value = 'planlandi';
+                    if (address) address.value = 'Adres bilgisi girilecek';
+                    
+                    // Reset tab to first
+                    currentTab = 0;
+                    showTab(0);
+                }
+            });
+            
+            closeCreateEventModal.addEventListener('click', () => {
+                createEventModal.classList.add('hidden');
+            });
+        }
+        
+        // Tab system for modal form
+        let currentTab = 0;
+        const tabs = ['basicTab', 'detailsTab', 'locationTab'];
+        const tabButtons = ['tabBasic', 'tabDetails', 'tabLocation'];
+        
+        function showTab(tabIndex) {
+            // Hide all tabs
+            tabs.forEach(tab => {
+                document.getElementById(tab).classList.add('hidden');
+            });
+            
+            // Remove active class from all tab buttons
+            tabButtons.forEach(btn => {
+                document.getElementById(btn).classList.remove('tab-active');
+                document.getElementById(btn).classList.add('text-gray-500');
+            });
+            
+            // Show current tab
+            document.getElementById(tabs[tabIndex]).classList.remove('hidden');
+            document.getElementById(tabButtons[tabIndex]).classList.add('tab-active');
+            document.getElementById(tabButtons[tabIndex]).classList.remove('text-gray-500');
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevTab');
+            const nextBtn = document.getElementById('nextTab');
+            const submitBtn = document.getElementById('submitForm');
+            
+            if (tabIndex === 0) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+            
+            if (tabIndex === tabs.length - 1) {
+                nextBtn.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+            }
+        }
+        
+        // Next tab button
+        const nextTabBtn = document.getElementById('nextTab');
+        if (nextTabBtn) {
+            nextTabBtn.addEventListener('click', () => {
+                if (currentTab < tabs.length - 1) {
+                    currentTab++;
+                    showTab(currentTab);
+                }
+            });
+        }
+        
+        // Previous tab button
+        const prevTabBtn = document.getElementById('prevTab');
+        if (prevTabBtn) {
+            prevTabBtn.addEventListener('click', () => {
+                if (currentTab > 0) {
+                    currentTab--;
+                    showTab(currentTab);
+                }
+            });
+        }
+        
+        // Tab button clicks
+        tabButtons.forEach((btn, index) => {
+            const button = document.getElementById(btn);
+            if (button) {
+                button.addEventListener('click', () => {
+                    currentTab = index;
+                    showTab(currentTab);
+                });
+            }
+        });
+        
+        // File upload functionality
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        const eventImage = document.getElementById('eventImage');
+        
+        if (selectFileBtn && eventImage) {
+            selectFileBtn.addEventListener('click', () => {
+                eventImage.click();
+            });
+            
+            eventImage.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    const fileName = e.target.files[0].name;
+                    selectFileBtn.textContent = fileName;
+                }
+            });
+        }
+        
+        // Form submission with error handling
+        if (createEventForm) {
+            createEventForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(createEventForm);
+                
+                fetch(createEventForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        // Başarılı - sayfayı yenile
+                        window.location.reload();
+                    } else {
+                        // Hata durumu - modal'da hata göster
+                        return response.text();
+                    }
+                })
+                .then(html => {
+                    if (html) {
+                        // Hata mesajlarını modal'da göster
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'mb-6 p-4 bg-red-50 border border-red-200 rounded-lg';
+                        errorDiv.innerHTML = `
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                                <span class="text-red-700 text-sm">Form hatalarını düzeltin ve tekrar deneyin.</span>
+                            </div>
+                        `;
+                        
+                        // Mevcut hata mesajını kaldır
+                        const existingError = document.querySelector('#createEventModal .bg-red-50');
+                        if (existingError) {
+                            existingError.remove();
+                        }
+                        
+                        // Yeni hata mesajını ekle
+                        const infoBox = document.getElementById('infoBox');
+                        infoBox.parentNode.insertBefore(errorDiv, infoBox.nextSibling);
+                        
+                        // İlk tab'a geri dön
+                        currentTab = 0;
+                        showTab(0);
+                    }
+                })
+                .catch(error => {
+                    console.error('Form submission error:', error);
+                });
+            });
+        }
+        
+        // Katılımcı Kayıt Modal
+        const participantRegisterBtn = document.getElementById('participantRegisterBtn');
+        const participantRegisterModal = document.getElementById('participantRegisterModal');
+        const closeParticipantRegisterModal = document.getElementById('closeParticipantRegisterModal');
+        const participantRegisterForm = document.getElementById('participantRegisterForm');
+        
+        if (participantRegisterBtn && participantRegisterModal && closeParticipantRegisterModal) {
+            participantRegisterBtn.addEventListener('click', () => {
+                participantRegisterModal.classList.remove('hidden');
+                // Reset form
+                if (participantRegisterForm) {
+                    participantRegisterForm.reset();
+                    // Hide messages
+                    document.getElementById('participantRegisterError').classList.add('hidden');
+                    document.getElementById('participantRegisterSuccess').classList.add('hidden');
+                }
+            });
+            
+            closeParticipantRegisterModal.addEventListener('click', () => {
+                participantRegisterModal.classList.add('hidden');
+            });
+        }
+        
+        // Switch to login from participant register
+        const switchToLoginFromParticipant = document.getElementById('switchToLoginFromParticipant');
+        if (switchToLoginFromParticipant) {
+            switchToLoginFromParticipant.addEventListener('click', () => {
+                participantRegisterModal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            });
+        }
+        
+        // Participant register form submission
+        if (participantRegisterForm) {
+            participantRegisterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(participantRegisterForm);
+                
+                fetch('/katilimcilar/kayit/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide both messages first
+                    document.getElementById('participantRegisterError').classList.add('hidden');
+                    document.getElementById('participantRegisterSuccess').classList.add('hidden');
+                    
+                    if (data.success) {
+                        // Show success message
+                        document.getElementById('participantRegisterSuccessMessage').textContent = data.message;
+                        document.getElementById('participantRegisterSuccess').classList.remove('hidden');
+                        
+                        // Show login modal after 2 seconds
+                        setTimeout(() => {
+                            if (data.show_login_modal) {
+                                participantRegisterModal.classList.add('hidden');
+                                loginModal.classList.remove('hidden');
+                            }
+                        }, 2000);
+                    } else {
+                        // Show error message
+                        document.getElementById('participantRegisterErrorMessage').textContent = data.message;
+                        document.getElementById('participantRegisterError').classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Registration error:', error);
+                    // Show generic error
+                    document.getElementById('participantRegisterErrorMessage').textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+                    document.getElementById('participantRegisterError').classList.remove('hidden');
+                });
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (participantRegisterModal) {
+            participantRegisterModal.addEventListener('click', (e) => {
+                if (e.target === participantRegisterModal) {
+                    participantRegisterModal.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === loginModal) {
+                loginModal.classList.add('hidden');
+            }
+            if (e.target === registerModal) {
+                registerModal.classList.add('hidden');
+            }
+            if (e.target === createEventModal) {
+                createEventModal.classList.add('hidden');
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

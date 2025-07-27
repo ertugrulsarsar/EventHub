@@ -1,0 +1,44 @@
+# =============================================================================
+# ETKİNLİK YÖNETİMİ PROJESİ - GEREKLİ PAKETLER
+# =============================================================================
+# Bu dosya projenin çalışması için gerekli Python paketlerini listeler
+# Her paketin ne işe yaradığı yorumlarda açıklanmıştır
+
+# Ana web framework - Django 5.0.14 (en güncel kararlı sürüm)
+Django==5.0.14
+
+# Django form widget'larını özelleştirmek için
+django-widget-tweaks==1.5.0
+
+# API sunucusu için FastAPI (Django ile birlikte kullanılacak)
+fastapi==0.116.1
+
+# FastAPI sunucusunu çalıştırmak için
+uvicorn==0.35.0
+
+# Veritabanı ORM için (FastAPI ile kullanılacak)
+sqlalchemy==2.0.41
+
+# FastAPI'de form verilerini işlemek için
+python-multipart==0.0.20
+
+# Veri doğrulama ve serialization için
+pydantic==2.11.7
+
+# HTTP istekleri yapmak için
+requests==2.32.4
+
+# Çevre değişkenlerini yönetmek için (.env dosyası)
+python-decouple==3.8
+
+# Resim işleme için (etkinlik resimleri)
+pillow==10.0.0
+
+# Bootstrap form stilleri için
+django-crispy-forms==2.0
+
+# Bootstrap 5 desteği için
+crispy-bootstrap5==0.7
+
+# Tarih işlemleri için (Eventbrite API entegrasyonu)
+python-dateutil==2.8.2 

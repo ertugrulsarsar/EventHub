@@ -1,0 +1,38 @@
+# =============================================================================
+# ETKİNLİKLER UYGULAMASI - YAPILANDIRMA
+# =============================================================================
+# Bu dosya Django'ya bu uygulamanın nasıl çalışacağını söyler
+
+from django.apps import AppConfig
+
+
+class EtkinliklerConfig(AppConfig):
+    """
+    Etkinlikler uygulamasının yapılandırması
+    
+    Bu sınıf Django'ya:
+    - Uygulamanın adını
+    - Varsayılan otomatik alan türünü
+    - Uygulama başlatıldığında yapılacak işlemleri söyler
+    """
+    
+    # Uygulamanın benzersiz adı
+    # Bu, Django'nun uygulamayı tanımasını sağlar
+    default_auto_field = 'django.db.models.BigAutoField'
+    
+    # Uygulamanın adı (settings.py'de kullanılan ad)
+    name = 'etkinlikler'
+    
+    # Uygulamanın görünen adı (admin panelinde görünür)
+    verbose_name = 'Etkinlik Yönetimi'
+    
+    def ready(self):
+        """
+        Uygulama başlatıldığında çalışacak kod
+        
+        Bu fonksiyon Django başlatıldığında bir kez çalışır
+        Genellikle sinyal kayıtları, özel komutlar için kullanılır
+        """
+        # Şimdilik boş bırakıyoruz
+        # İleride sinyal kayıtları ekleyebiliriz
+        pass 

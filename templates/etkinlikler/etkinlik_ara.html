@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+
+{% block title %}Etkinlik Ara - EventHub{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl shadow-2xl mb-8 overflow-hidden">
+    <div class="px-8 py-12 relative">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
+            <div class="absolute top-1/2 right-0 w-24 h-24 bg-white rounded-full translate-x-12 -translate-y-12"></div>
+            <div class="absolute bottom-0 left-1/3 w-20 h-20 bg-white rounded-full translate-y-10"></div>
+        </div>
+        
+        <div class="relative z-10 text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-4 flex items-center justify-center gap-4">
+                <i class="fas fa-search text-yellow-300"></i>
+                Etkinlik Ara
+            </h1>
+            <p class="text-xl md:text-2xl text-blue-100 mb-6">
+                Hayalindeki etkinliği bul ve katıl!
+            </p>
+            
+            <!-- Search Stats -->
+            <div class="flex flex-wrap justify-center gap-6 text-center">
+                <div class="bg-white bg-opacity-20 rounded-lg px-6 py-3 backdrop-blur-sm">
+                    <div class="text-2xl font-bold">{{ toplam_etkinlik|default:0 }}</div>
+                    <div class="text-sm text-blue-100">Toplam Etkinlik</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg px-6 py-3 backdrop-blur-sm">
+                    <div class="text-2xl font-bold">{{ kategoriler.count }}</div>
+                    <div class="text-sm text-blue-100">Kategori</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg px-6 py-3 backdrop-blur-sm">
+                    <div class="text-2xl font-bold">24/7</div>
+                    <div class="text-sm text-blue-100">Aktif</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Search Form -->
+<div class="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 overflow-hidden">
+    <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-3">
+            <i class="fas fa-filter text-blue-600"></i>
+            Gelişmiş Arama
+        </h2>
+        <p class="text-gray-600 text-sm mt-1">Arama kriterlerinizi belirleyin ve size en uygun etkinlikleri bulun</p>
+    </div>
+    
+    <div class="p-6">
+        <form method="get" class="space-y-6">
+            <!-- Main Search Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <!-- Search Input -->
+                <div class="lg:col-span-2">
+                    <label for="q" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-search text-blue-600 mr-2"></i>Arama Terimi
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-lg" 
+                               id="q" name="q" 
+                               value="{{ arama_terimi|default:'' }}" 
+                               placeholder="Etkinlik adı, açıklama, yer...">
+                        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-search text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Filter -->
+                <div>
+                    <label for="kategori" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tag text-green-600 mr-2"></i>Kategori
+                    </label>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 text-lg" 
+                            id="kategori" name="kategori">
+                        <option value="">Tüm Kategoriler</option>
+                        {% for kategori in kategoriler %}
+                        <option value="{{ kategori.id }}" 
+                                {% if secilen_kategori == kategori.id|stringformat:"s" %}selected{% endif %}>
+                            {{ kategori.ad }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Status Filter -->
+                <div>
+                    <label for="durum" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-clock text-orange-600 mr-2"></i>Durum
+                    </label>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 text-lg" 
+                            id="durum" name="durum">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="planlandi" {% if secilen_durum == 'planlandi' %}selected{% endif %}>Planlandı</option>
+                        <option value="aktif" {% if secilen_durum == 'aktif' %}selected{% endif %}>Aktif</option>
+                        <option value="tamamlandi" {% if secilen_durum == 'tamamlandi' %}selected{% endif %}>Tamamlandı</option>
+                        <option value="iptal" {% if secilen_durum == 'iptal' %}selected{% endif %}>İptal</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center pt-4 border-t border-gray-200">
+                <div class="flex items-center gap-4 text-sm text-gray-600">
+                    {% if arama_terimi or secilen_kategori or secilen_durum %}
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        Aktif filtreler: 
+                        {% if arama_terimi %}<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-lg">{{ arama_terimi }}</span>{% endif %}
+                        {% if secilen_kategori %}<span class="bg-green-100 text-green-800 px-2 py-1 rounded-lg">{{ secilen_kategori }}</span>{% endif %}
+                        {% if secilen_durum %}<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-lg">{{ secilen_durum }}</span>{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex gap-3">
+                    <a href="{% url 'etkinlikler:etkinlik_ara' %}" 
+                       class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 flex items-center gap-2">
+                        <i class="fas fa-undo"></i>
+                        Temizle
+                    </a>
+                    <button type="submit" 
+                            class="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <i class="fas fa-search"></i>
+                        Ara
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if etkinlikler %}
+<!-- Results Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+    <div class="mb-4 sm:mb-0">
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-list text-blue-600 mr-3"></i>
+            Arama Sonuçları
+        </h3>
+        <p class="text-gray-600">
+            {% if toplam_etkinlik %}
+                <span class="font-semibold text-blue-600">{{ toplam_etkinlik }}</span> etkinlik bulundu
+            {% endif %}
+        </p>
+    </div>
+    
+    <!-- Sort Options -->
+    <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">Sırala:</span>
+        <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option>En Yeni</option>
+            <option>En Eski</option>
+            <option>En Popüler</option>
+            <option>Fiyat (Düşük-Yüksek)</option>
+        </select>
+    </div>
+</div>
+
+<!-- Events Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for etkinlik in etkinlikler %}
+    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group transform hover:-translate-y-2">
+        <!-- Event Image -->
+        <div class="relative h-48 overflow-hidden">
+            {% if etkinlik.resim %}
+            <img src="{{ etkinlik.resim.url }}" alt="{{ etkinlik.baslik }}" 
+                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+            {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <i class="fas fa-{{ etkinlik.kategori.icon|default:'calendar' }} text-white text-4xl"></i>
+            </div>
+            {% endif %}
+            
+            <!-- Status Badge -->
+            <div class="absolute top-3 right-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold 
+                    {% if etkinlik.durum == 'aktif' %}bg-green-500 text-white
+                    {% elif etkinlik.durum == 'planlandi' %}bg-blue-500 text-white
+                    {% elif etkinlik.durum == 'tamamlandi' %}bg-gray-500 text-white
+                    {% elif etkinlik.durum == 'iptal' %}bg-red-500 text-white{% endif %}">
+                    {% if etkinlik.durum == 'planlandi' %}Planlandı
+                    {% elif etkinlik.durum == 'aktif' %}Aktif
+                    {% elif etkinlik.durum == 'tamamlandi' %}Tamamlandı
+                    {% elif etkinlik.durum == 'iptal' %}İptal{% endif %}
+                </span>
+            </div>
+            
+            <!-- Category Badge -->
+            <div class="absolute top-3 left-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white bg-opacity-90 text-gray-800">
+                    <i class="fas fa-tag mr-1"></i>
+                    {{ etkinlik.kategori.ad }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <!-- Event Title -->
+            <h4 class="text-xl font-bold text-gray-800 mb-3 line-clamp-2">
+                <a href="{% url 'etkinlikler:etkinlik_detay' etkinlik.id %}" 
+                   class="hover:text-blue-600 transition-colors">
+                    {{ etkinlik.baslik }}
+                </a>
+            </h4>
+            
+            <!-- Event Description -->
+            <p class="text-gray-600 mb-4 line-clamp-3">
+                {{ etkinlik.aciklama|default:"Bu etkinlik hakkında detaylı bilgi için tıklayın." }}
+            </p>
+            
+            <!-- Event Details -->
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-calendar text-blue-500 w-5"></i>
+                    <span class="ml-2">{{ etkinlik.baslangic_tarihi|date:"d.m.Y" }}</span>
+                    <i class="fas fa-clock text-green-500 w-5 ml-4"></i>
+                    <span class="ml-2">{{ etkinlik.baslangic_tarihi|date:"H:i" }}</span>
+                </div>
+                
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-map-marker-alt text-red-500 w-5"></i>
+                    <span class="ml-2">{{ etkinlik.yer }}</span>
+                </div>
+                
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-user text-purple-500 w-5"></i>
+                    <span class="ml-2">{{ etkinlik.organizator.get_full_name|default:etkinlik.organizator.username }}</span>
+                </div>
+            </div>
+            
+            <!-- Capacity Progress -->
+            <div class="mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Katılımcı</span>
+                    <span class="font-semibold">{{ etkinlik.mevcut_katilimci }}/{{ etkinlik.maksimum_katilimci }}</span>
+                </div>
+                {% widthratio etkinlik.mevcut_katilimci etkinlik.maksimum_katilimci 100 as doluluk_orani %}
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300" 
+                         style="width: {{ doluluk_orani }}%"></div>
+                </div>
+            </div>
+            
+            <!-- Price and Action -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div class="flex items-center">
+                    {% if etkinlik.ucret %}
+                    <span class="text-lg font-bold text-green-600">{{ etkinlik.ucret }} ₺</span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800">
+                        <i class="fas fa-gift mr-1"></i>
+                        Ücretsiz
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <a href="{% url 'etkinlikler:etkinlik_detay' etkinlik.id %}" 
+                   class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center gap-2 text-sm font-semibold">
+                    <i class="fas fa-eye"></i>
+                    Detaylar
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if etkinlikler.has_other_pages %}
+<nav aria-label="Etkinlik sayfaları" class="mt-12">
+    <div class="flex justify-center">
+        <ul class="flex items-center space-x-2">
+            {% if etkinlikler.has_previous %}
+            <li>
+                <a href="?{% if arama_terimi %}q={{ arama_terimi }}&{% endif %}{% if secilen_kategori %}kategori={{ secilen_kategori }}&{% endif %}{% if secilen_durum %}durum={{ secilen_durum }}&{% endif %}sayfa={{ etkinlikler.previous_page_number }}" 
+                   class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-all duration-300 flex items-center gap-2">
+                    <i class="fas fa-chevron-left"></i>
+                    Önceki
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in etkinlikler.paginator.page_range %}
+                {% if etkinlikler.number == num %}
+                <li>
+                    <span class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 border border-blue-600 rounded-lg">{{ num }}</span>
+                </li>
+                {% elif num > etkinlikler.number|add:'-3' and num < etkinlikler.number|add:'3' %}
+                <li>
+                    <a href="?{% if arama_terimi %}q={{ arama_terimi }}&{% endif %}{% if secilen_kategori %}kategori={{ secilen_kategori }}&{% endif %}{% if secilen_durum %}durum={{ secilen_durum }}&{% endif %}sayfa={{ num }}" 
+                       class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-all duration-300">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if etkinlikler.has_next %}
+            <li>
+                <a href="?{% if arama_terimi %}q={{ arama_terimi }}&{% endif %}{% if secilen_kategori %}kategori={{ secilen_kategori }}&{% endif %}{% if secilen_durum %}durum={{ secilen_durum }}&{% endif %}sayfa={{ etkinlikler.next_page_number }}" 
+                   class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transition-all duration-300 flex items-center gap-2">
+                    Sonraki
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+{% endif %}
+
+{% elif arama_terimi or secilen_kategori or secilen_durum %}
+<!-- No Search Results -->
+<div class="text-center py-16">
+    <div class="bg-white rounded-2xl shadow-xl p-12 max-w-md mx-auto">
+        <div class="w-24 h-24 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-search text-red-500 text-3xl"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Sonuç Bulunamadı</h3>
+        <p class="text-gray-600 mb-8 leading-relaxed">
+            Arama kriterlerinize uygun etkinlik bulunamadı. 
+            Farklı anahtar kelimeler veya filtreler deneyebilirsiniz.
+        </p>
+        <div class="space-y-3">
+            <a href="{% url 'etkinlikler:etkinlik_ara' %}" 
+               class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold">
+                <i class="fas fa-search mr-2"></i>
+                Yeni Arama Yap
+            </a>
+            <a href="{% url 'etkinlikler:etkinlik_listesi' %}" 
+               class="w-full inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300">
+                <i class="fas fa-list mr-2"></i>
+                Tüm Etkinlikleri Gör
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Initial State -->
+<div class="text-center py-16">
+    <div class="bg-white rounded-2xl shadow-xl p-12 max-w-lg mx-auto">
+        <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-search text-blue-500 text-3xl"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Etkinlik Ara</h3>
+        <p class="text-gray-600 mb-8 leading-relaxed">
+            Yukarıdaki arama formunu kullanarak size en uygun etkinlikleri bulabilirsiniz. 
+            Kategori, durum ve anahtar kelime filtrelerini kullanarak aramanızı daraltabilirsiniz.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div class="bg-blue-50 rounded-lg p-4">
+                <i class="fas fa-search text-blue-500 text-xl mb-2"></i>
+                <div class="font-semibold text-gray-800">Arama</div>
+                <div class="text-gray-600">Anahtar kelime ile ara</div>
+            </div>
+            <div class="bg-green-50 rounded-lg p-4">
+                <i class="fas fa-tag text-green-500 text-xl mb-2"></i>
+                <div class="font-semibold text-gray-800">Kategori</div>
+                <div class="text-gray-600">İlgi alanınıza göre filtrele</div>
+            </div>
+            <div class="bg-orange-50 rounded-lg p-4">
+                <i class="fas fa-clock text-orange-500 text-xl mb-2"></i>
+                <div class="font-semibold text-gray-800">Durum</div>
+                <div class="text-gray-600">Etkinlik durumuna göre ara</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %} 

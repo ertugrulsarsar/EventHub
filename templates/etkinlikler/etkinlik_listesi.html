@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}EventHub - Etkinlikleri Keşfet{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
+    <div class="container mx-auto px-4">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">Etkinlikleri Keşfet, Anı Yaşa</h1>
+            <p class="text-lg md:text-xl mb-8 opacity-90">Şehirdeki en iyi etkinlikleri keşfet, biletini al ve unutulmaz anılar biriktir.</p>
+            <div class="relative max-w-2xl mx-auto">
+                <input type="text" placeholder="Etkinlik, kategori veya konum ara..." class="w-full pl-5 pr-12 py-4 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-white">
+                <button class="absolute right-2 top-2 bg-primary-dark hover:bg-primary text-white p-2 rounded-lg">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="py-8 bg-white shadow-sm">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex flex-wrap gap-2">
+                <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                    Tüm Etkinlikler
+                </button>
+                <button class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Bu Hafta
+                </button>
+                <button class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Bu Ay
+                </button>
+                <button class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Ücretsiz
+                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                <label for="category" class="text-gray-700">Kategori:</label>
+                <select id="category" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="all">Tümü</option>
+                    {% for kategori in kategoriler %}
+                    <option value="{{ kategori.id }}">{{ kategori.ad }}</option>
+                    {% endfor %}
+                </select>
+                <button class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-sliders-h mr-2"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Events Section -->
+<section class="py-12">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-800">
+                {% if toplam_etkinlik %}
+                    {{ toplam_etkinlik }} Etkinlik Bulundu
+                {% else %}
+                    Popüler Etkinlikler
+                {% endif %}
+            </h2>
+            {% if user.is_authenticated and user.organizator %}
+            <button id="createEventBtn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark transition-colors">
+                <i class="fas fa-plus mr-2"></i> Etkinlik Oluştur
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Events Grid -->
+        {% if etkinlikler %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for etkinlik in etkinlikler %}
+            <div class="event-card bg-white rounded-xl overflow-hidden shadow-md">
+                <div class="relative">
+                    {% if etkinlik.resim %}
+                    <img src="{{ etkinlik.resim.url }}" alt="{{ etkinlik.baslik }}" class="w-full h-48 object-cover">
+                    {% else %}
+                    <div class="h-48 bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-white opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    <div class="absolute top-4 left-4 bg-primary text-white text-xs font-bold px-2 py-1 rounded">
+                        {{ etkinlik.kategori.ad }}
+                    </div>
+                    {% if etkinlik.durum == 'aktif' %}
+                    <div class="absolute top-4 right-4 bg-white text-secondary text-xs font-bold px-2 py-1 rounded-full">
+                        <i class="fas fa-fire mr-1"></i> Aktif
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="p-5">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            <a href="{% url 'etkinlikler:etkinlik_detay' etkinlik.id %}" class="hover:text-primary transition-colors">
+                                {{ etkinlik.baslik }}
+                            </a>
+                        </h3>
+                        <span class="text-secondary font-bold">
+                            {% if etkinlik.ucret %}
+                                ₺{{ etkinlik.ucret }}
+                            {% else %}
+                                Ücretsiz
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                        <i class="far fa-calendar mr-2"></i>
+                        <span>{{ etkinlik.baslangic_tarihi|date:"d F Y, H:i" }}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600 mb-4">
+                        <i class="fas fa-map-marker-alt mr-2"></i>
+                        <span>{{ etkinlik.yer }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex -space-x-2">
+                                {% for i in "123" %}
+                                <div class="w-7 h-7 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-xs text-white">
+                                    {{ forloop.counter|add:64|stringformat:"c" }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <span class="text-xs text-gray-500 ml-2">+{{ etkinlik.kayit_set.count }} katılımcı</span>
+                        </div>
+                        <button class="text-primary hover:text-primary-dark">
+                            <i class="far fa-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if etkinlikler.has_other_pages %}
+        <div class="mt-12 flex justify-center">
+            <nav class="flex items-center space-x-2">
+                {% if etkinlikler.has_previous %}
+                <a href="?page={{ etkinlikler.previous_page_number }}" class="px-3 py-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in etkinlikler.paginator.page_range %}
+                    {% if etkinlikler.number == num %}
+                    <span class="px-4 py-2 rounded-lg bg-primary text-white">{{ num }}</span>
+                    {% elif num > etkinlikler.number|add:'-3' and num < etkinlikler.number|add:'3' %}
+                    <a href="?page={{ num }}" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if etkinlikler.has_next %}
+                <a href="?page={{ etkinlikler.next_page_number }}" class="px-3 py-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- No Events Found -->
+        <div class="text-center py-12">
+            <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-calendar-times text-4xl text-gray-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Henüz Etkinlik Bulunmuyor</h3>
+            <p class="text-gray-600 mb-6">Şu anda aktif etkinlik bulunmuyor. Daha sonra tekrar kontrol edin.</p>
+            {% if not user.is_authenticated %}
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button id="registerBtn" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i> Kayıt Ol
+                </button>
+                <button id="loginBtn" class="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Giriş Yap
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-12 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">Popüler Kategoriler</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {% for kategori in kategoriler %}
+            <a href="{% url 'etkinlikler:kategori_etkinlikleri' kategori.ad %}" class="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <div class="w-12 h-12 bg-blue-100 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-{{ kategori.icon|default:'calendar' }} text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-800">{{ kategori.ad }}</h3>
+                <p class="text-sm text-gray-500 mt-1">{{ kategori.etkinlik_set.count }} etkinlik</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+{% if not user.is_authenticated %}
+<section class="py-16 bg-gradient-to-r from-primary to-primary-dark text-white">
+    <div class="container mx-auto px-4">
+        <div class="max-w-3xl mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">Kendi Etkinliğini Oluşturmaya Hazır mısın?</h2>
+            <p class="text-lg mb-8 opacity-90">Hemen ücretsiz kayıt ol ve dakikalar içinde etkinliğini oluşturmaya başla.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button id="registerBtn" class="px-8 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-gray-100 transition-colors">
+                    Organizatör Olarak Kaydol
+                </button>
+                <button class="px-8 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors">
+                    Daha Fazla Bilgi
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

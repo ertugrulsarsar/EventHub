@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ kategori }} Etkinlikleri{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Başlık Bölümü -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="fas fa-tags me-2"></i>{{ kategori }} Etkinlikleri
+                    </h1>
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Bu kategoride toplam <strong>{{ toplam_etkinlik }}</strong> etkinlik bulundu
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Tüm Etkinlikler
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Etkinlikler -->
+    {% if etkinlikler %}
+        <div class="row">
+            {% for etkinlik in etkinlikler %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-lift">
+                        <!-- Etkinlik Resmi -->
+                        {% if etkinlik.resim %}
+                            <img src="{{ etkinlik.resim.url }}" class="card-img-top" alt="{{ etkinlik.baslik }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-calendar-alt fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Etkinlik Durumu Badge -->
+                        <div class="position-absolute top-0 end-0 m-2">
+                            {% if etkinlik.durum == 'aktif' %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% elif etkinlik.durum == 'beklemede' %}
+                                <span class="badge bg-warning">Beklemede</span>
+                            {% elif etkinlik.durum == 'iptal' %}
+                                <span class="badge bg-danger">İptal</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <!-- Etkinlik Başlığı -->
+                            <h5 class="card-title fw-bold text-primary mb-2">
+                                <a href="{% url 'etkinlikler:etkinlik_detay' etkinlik.id %}" class="text-decoration-none">
+                                    {{ etkinlik.baslik|truncatechars:50 }}
+                                </a>
+                            </h5>
+                            
+                            <!-- Organizatör -->
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-user me-1"></i>
+                                {{ etkinlik.organizator.get_full_name|default:etkinlik.organizator.username }}
+                            </p>
+                            
+                            <!-- Tarih ve Saat -->
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ etkinlik.baslangic_tarihi|date:"d.m.Y" }}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ etkinlik.baslangic_tarihi|time:"H:i" }} - {{ etkinlik.bitis_tarihi|time:"H:i" }}
+                                </small>
+                            </div>
+                            
+                            <!-- Yer -->
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                {{ etkinlik.yer|truncatechars:30 }}
+                            </p>
+                            
+                            <!-- Katılımcı Sayısı -->
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ etkinlik.kayit_set.count }} katılımcı
+                                </small>
+                            </div>
+                            
+                            <!-- Açıklama -->
+                            <p class="card-text text-muted small flex-grow-1">
+                                {{ etkinlik.aciklama|truncatechars:100 }}
+                            </p>
+                            
+                            <!-- Butonlar -->
+                            <div class="mt-auto">
+                                <a href="{% url 'etkinlikler:etkinlik_detay' etkinlik.id %}" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-eye me-1"></i>Detayları Gör
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Sayfalama -->
+        {% if etkinlikler.has_other_pages %}
+            <nav aria-label="Etkinlik sayfaları" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if etkinlikler.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?sayfa={{ etkinlikler.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i> Önceki
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in etkinlikler.paginator.page_range %}
+                        {% if etkinlikler.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > etkinlikler.number|add:'-3' and num < etkinlikler.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?sayfa={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if etkinlikler.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?sayfa={{ etkinlikler.next_page_number }}">
+                                Sonraki <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        
+    {% else %}
+        <!-- Etkinlik Bulunamadı -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h3 class="text-muted">Bu kategoride henüz etkinlik bulunmuyor</h3>
+                    <p class="text-muted">Daha sonra tekrar kontrol edebilirsiniz.</p>
+                    <a href="{% url 'etkinlikler:etkinlik_listesi' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Tüm Etkinliklere Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

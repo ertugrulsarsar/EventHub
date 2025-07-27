@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profil Düzenle - EventHub{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="bg-gradient-to-r from-secondary to-secondary-dark text-white rounded-xl shadow-lg mb-8">
+    <div class="px-8 py-12">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold flex items-center gap-3 mb-4">
+                    <i class="fas fa-user-cog text-yellow-300"></i>
+                    Profil Düzenle
+                </h1>
+                <p class="text-xl text-blue-100 flex items-center gap-2">
+                    <i class="fas fa-user text-blue-200"></i>
+                    {{ user.get_full_name|default:user.username }}
+                </p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'katilimcilar:profil' %}" 
+                   class="px-6 py-3 bg-white text-secondary font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                    Geri Dön
+                </a>
+                <a href="{% url 'kayitlar:katilimlarim' %}" 
+                   class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <i class="fas fa-list-check text-lg"></i>
+                    Katılımlarım
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Form -->
+<div class="max-w-4xl mx-auto">
+    <form method="post" enctype="multipart/form-data" novalidate class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- Personal Information Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-secondary to-secondary-dark px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <i class="fas fa-user text-yellow-300"></i>
+                    Kişisel Bilgiler
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="first_name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Ad <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300" 
+                               id="first_name" name="first_name" 
+                               value="{{ user.first_name|default:'' }}" 
+                               placeholder="Adınızı girin"
+                               required>
+                    </div>
+                    <div>
+                        <label for="last_name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Soyad <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300" 
+                               id="last_name" name="last_name" 
+                               value="{{ user.last_name|default:'' }}" 
+                               placeholder="Soyadınızı girin"
+                               required>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+                        E-posta <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-all duration-300" 
+                           id="email" name="email" 
+                           value="{{ user.email|default:'' }}" 
+                           placeholder="ornek@email.com"
+                           required>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <i class="fas fa-map-marker-alt text-yellow-300"></i>
+                    İletişim Bilgileri
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="telefon" class="block text-sm font-semibold text-gray-700 mb-2">Telefon</label>
+                        <input type="tel" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" 
+                               id="telefon" name="telefon" 
+                               value="{{ katilimci.telefon|default:'' }}" 
+                               placeholder="+905551234567">
+                    </div>
+                    <div>
+                        <label for="dogum_tarihi" class="block text-sm font-semibold text-gray-700 mb-2">Doğum Tarihi</label>
+                        <input type="date" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" 
+                               id="dogum_tarihi" name="dogum_tarihi" 
+                               value="{{ katilimci.dogum_tarihi|date:'Y-m-d'|default:'' }}">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label for="sehir" class="block text-sm font-semibold text-gray-700 mb-2">Şehir</label>
+                    <input type="text" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" 
+                           id="sehir" name="sehir" 
+                           value="{{ katilimci.sehir|default:'' }}"
+                           placeholder="İstanbul">
+                </div>
+                
+                <div class="mt-6">
+                    <label for="adres" class="block text-sm font-semibold text-gray-700 mb-2">Adres</label>
+                    <textarea class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300" 
+                              id="adres" name="adres" 
+                              rows="3" 
+                              placeholder="Adres bilgilerinizi girin">{{ katilimci.adres|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Social Media Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <i class="fas fa-link text-yellow-300"></i>
+                    Sosyal Medya
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="website" class="block text-sm font-semibold text-gray-700 mb-2">Website</label>
+                        <input type="url" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300" 
+                               id="website" name="website" 
+                               value="{{ katilimci.website|default:'' }}" 
+                               placeholder="https://example.com">
+                    </div>
+                    <div>
+                        <label for="linkedin" class="block text-sm font-semibold text-gray-700 mb-2">LinkedIn</label>
+                        <input type="url" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300" 
+                               id="linkedin" name="linkedin" 
+                               value="{{ katilimci.linkedin|default:'' }}" 
+                               placeholder="https://linkedin.com/in/username">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label for="twitter" class="block text-sm font-semibold text-gray-700 mb-2">Twitter</label>
+                    <input type="url" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300" 
+                           id="twitter" name="twitter" 
+                           value="{{ katilimci.twitter|default:'' }}" 
+                           placeholder="https://twitter.com/username">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Information Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <i class="fas fa-info-circle text-yellow-300"></i>
+                    Profil Bilgileri
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="mb-6">
+                    <label for="bio" class="block text-sm font-semibold text-gray-700 mb-2">Hakkında</label>
+                    <textarea class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300" 
+                              id="bio" name="bio" 
+                              rows="4" 
+                              placeholder="Kendiniz hakkında kısa bir bilgi...">{{ katilimci.bio|default:'' }}</textarea>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="profil_resmi" class="block text-sm font-semibold text-gray-700 mb-2">Profil Resmi</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors duration-300">
+                        <input type="file" 
+                               class="hidden" 
+                               id="profil_resmi" name="profil_resmi" 
+                               accept="image/*">
+                        <label for="profil_resmi" class="cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600">Resim seçmek için tıklayın</p>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF (Max: 5MB)</p>
+                        </label>
+                    </div>
+                    {% if katilimci.profil_resmi %}
+                    <div class="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-500"></i>
+                            <span class="text-sm text-blue-700">Mevcut resim: {{ katilimci.profil_resmi.name }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification Preferences Card -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                    <i class="fas fa-bell text-yellow-300"></i>
+                    Bildirim Tercihleri
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" 
+                                   class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded" 
+                                   id="email_bildirim" name="email_bildirim"
+                                   {% if katilimci.email_bildirim %}checked{% endif %}>
+                        </div>
+                        <div class="ml-3">
+                            <label for="email_bildirim" class="text-sm font-medium text-gray-900">E-posta Bildirimleri</label>
+                            <p class="text-sm text-gray-500">Etkinlik güncellemeleri ve duyurular</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" 
+                                   class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded" 
+                                   id="sms_bildirim" name="sms_bildirim"
+                                   {% if katilimci.sms_bildirim %}checked{% endif %}>
+                        </div>
+                        <div class="ml-3">
+                            <label for="sms_bildirim" class="text-sm font-medium text-gray-900">SMS Bildirimleri</label>
+                            <p class="text-sm text-gray-500">Önemli etkinlik hatırlatmaları</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'katilimcilar:profil' %}" 
+               class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <i class="fas fa-times"></i>
+                İptal
+            </a>
+            <button type="submit" 
+                    class="px-8 py-3 bg-gradient-to-r from-secondary to-secondary-dark text-white font-semibold rounded-lg hover:from-secondary-dark hover:to-secondary transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                <i class="fas fa-check-circle"></i>
+                Değişiklikleri Kaydet
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    // Email validation
+    const email = document.getElementById('email');
+    email.addEventListener('input', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.value)) {
+            this.classList.add('border-red-500', 'bg-red-50');
+            this.setCustomValidity('Geçerli bir e-posta adresi giriniz');
+        } else {
+            this.classList.remove('border-red-500', 'bg-red-50');
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Phone validation
+    const telefon = document.getElementById('telefon');
+    telefon.addEventListener('input', function() {
+        const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+        if (this.value && !phoneRegex.test(this.value)) {
+            this.classList.add('border-red-500', 'bg-red-50');
+            this.setCustomValidity('Geçerli bir telefon numarası giriniz');
+        } else {
+            this.classList.remove('border-red-500', 'bg-red-50');
+            this.setCustomValidity('');
+        }
+    });
+    
+    // URL validation
+    const urls = ['website', 'linkedin', 'twitter'];
+    urls.forEach(function(fieldName) {
+        const field = document.getElementById(fieldName);
+        if (field) {
+            field.addEventListener('input', function() {
+                if (this.value && !this.value.startsWith('http://') && !this.value.startsWith('https://')) {
+                    this.classList.add('border-red-500', 'bg-red-50');
+                    this.setCustomValidity('URL http:// veya https:// ile başlamalıdır');
+                } else {
+                    this.classList.remove('border-red-500', 'bg-red-50');
+                    this.setCustomValidity('');
+                }
+            });
+        }
+    });
+    
+    // File input styling
+    const fileInput = document.getElementById('profil_resmi');
+    const fileLabel = document.querySelector('label[for="profil_resmi"]');
+    
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const fileName = this.files[0].name;
+            fileLabel.innerHTML = `
+                <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                <p class="text-sm text-gray-600">${fileName}</p>
+                <p class="text-xs text-gray-500 mt-1">Dosya seçildi</p>
+            `;
+        }
+    });
+});
+</script>
+{% endblock %} 
