@@ -251,35 +251,35 @@ class Command(BaseCommand):
     def clear_sample_data(self):
         """Örnek verileri temizler"""
         self.stdout.write(
-            self.style.WARNING('��️ Örnek veriler temizleniyor...')
+            self.style.WARNING('UYARI: Örnek veriler temizleniyor...')
         )
         
         # Kayıtları temizle
         Kayit.objects.all().delete()
-        self.stdout.write('  📝 Kayıtlar temizlendi')
+        self.stdout.write('  - Kayıtlar temizlendi')
         
         # Etkinlikleri temizle
         Etkinlik.objects.all().delete()
-        self.stdout.write('  �� Etkinlikler temizlendi')
+        self.stdout.write('  - Etkinlikler temizlendi')
         
         # Kategorileri temizle
         Kategori.objects.all().delete()
-        self.stdout.write('  �� Kategoriler temizlendi')
+        self.stdout.write('  - Kategoriler temizlendi')
         
         # Katılımcıları temizle
         Katilimci.objects.all().delete()
-        self.stdout.write('  �� Katılımcılar temizlendi')
+        self.stdout.write('  - Katılımcılar temizlendi')
         
         # Organizatörleri temizle
         Organizator.objects.all().delete()
-        self.stdout.write('  �� Organizatörler temizlendi')
+        self.stdout.write('  - Organizatörler temizlendi')
         
         # Test kullanıcılarını temizle
         User.objects.filter(username__startswith='test').delete()
         User.objects.filter(username__startswith='organizator').delete()
         User.objects.filter(username__startswith='katilimci').delete()
-        self.stdout.write('  �� Test kullanıcıları temizlendi')
+        self.stdout.write('  - Test kullanıcıları temizlendi')
         
         self.stdout.write(
-            self.style.SUCCESS('✅ Tüm örnek veriler temizlendi!')
+            self.style.SUCCESS('BASARILI: Tüm örnek veriler temizlendi!')
         )
