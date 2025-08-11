@@ -6,6 +6,7 @@
 
 import os
 from pathlib import Path
+from decouple import config, Csv
 
 # Proje kök dizinini belirle
 # Bu, manage.py dosyasının bulunduğu dizindir
@@ -13,15 +14,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Django güvenlik anahtarı
 # ⚠️ PRODUCTION'DA BU ANAHTARI DEĞİŞTİRİN!
-SECRET_KEY = 'django-insecure-etkinlik-yonetimi-2024-gelistirme-ortami'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-etkinlik-yonetimi-2024-gelistirme-ortami')
 
 # Hata ayıklama modu
 # Geliştirme sırasında True, production'da False olmalı
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 # Hangi domain'lerden erişime izin verileceği
 # Geliştirme sırasında boş bırakılabilir
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 # =============================================================================
 # DJANGO UYGULAMALARI
@@ -99,8 +100,12 @@ WSGI_APPLICATION = 'EtkinlikYonetimi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',  # Veritabanı dosyası
+        'ENGINE': f"django.db.backends.{config('DATABASE_ENGINE', default='sqlite3')}",
+        'NAME': config('DATABASE_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+        'USER': config('DATABASE_USER', default=''),
+        'PASSWORD': config('DATABASE_PASSWORD', default=''),
+        'HOST': config('DATABASE_HOST', default=''),
+        'PORT': config('DATABASE_PORT', default=''),
     }
 }
 
@@ -139,8 +144,9 @@ USE_TZ = True                     # Saat dilimi desteği aktif
 # =============================================================================
 # CSS, JavaScript, resim dosyaları için
 
-STATIC_URL = 'static/'  # URL öneki
+STATIC_URL = '/static/'  # URL öneki - / ile başlamalı!
 STATICFILES_DIRS = [BASE_DIR / 'static']  # Statik dosya dizinleri
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Production için statik dosya toplama
 
 # =============================================================================
 # MEDYA DOSYALARI
@@ -165,4 +171,48 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 LOGIN_REDIRECT_URL = 'etkinlikler:etkinlik_listesi'      # Giriş sonrası etkinlik listesi
 LOGOUT_REDIRECT_URL = 'etkinlikler:etkinlik_listesi'     # Çıkış sonrası etkinlik listesi
 
-# Eventbrite ile ilgili ayarlar kaldırıldı 
+# CORS ayarları
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=Csv())
+
+# E-posta ayarları
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Güvenlik ayarları
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=Csv())
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+
+# Logging ayarları
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': config('LOG_LEVEL', default='INFO'),
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': config('LOG_LEVEL', default='INFO'),
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': config('LOG_LEVEL', default='INFO'),
+    },
+}

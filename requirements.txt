@@ -5,40 +5,39 @@
 # Her paketin ne işe yaradığı yorumlarda açıklanmıştır
 
 # Ana web framework - Django 5.0.14 (en güncel kararlı sürüm)
-Django==5.0.14
+Django
 
 # Django form widget'larını özelleştirmek için
-django-widget-tweaks==1.5.0
+django-widget-tweaks
 
 # API sunucusu için FastAPI (Django ile birlikte kullanılacak)
-fastapi==0.116.1
+fastapi
 
 # FastAPI sunucusunu çalıştırmak için
-uvicorn==0.35.0
+uvicorn
 
 # Veritabanı ORM için (FastAPI ile kullanılacak)
-sqlalchemy==2.0.41
+sqlalchemy
 
 # FastAPI'de form verilerini işlemek için
-python-multipart==0.0.20
+python-multipart
 
 # Veri doğrulama ve serialization için
-pydantic==2.11.7
+pydantic
 
 # HTTP istekleri yapmak için
-requests==2.32.4
-
+requests
 # Çevre değişkenlerini yönetmek için (.env dosyası)
-python-decouple==3.8
+python-decouple
 
 # Resim işleme için (etkinlik resimleri)
-pillow==10.0.0
+pillow
 
 # Bootstrap form stilleri için
-django-crispy-forms==2.0
+django-crispy-forms
 
 # Bootstrap 5 desteği için
-crispy-bootstrap5==0.7
+crispy-bootstrap5
 
 # Tarih işlemleri için (Eventbrite API entegrasyonu)
-python-dateutil==2.8.2 
+python-dateutil
