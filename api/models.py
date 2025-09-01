@@ -5,6 +5,7 @@
 # Django modelleri ile uyumlu olacak şekilde tasarlanmıştır
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Float, Date
+from sqlalchemy.types import Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -46,7 +47,7 @@ class Etkinlik(Base):
     mevcut_katilimci = Column(Integer, default=0)
     durum = Column(String(20), default="planlandi")
     organizator_id = Column(Integer, ForeignKey("auth_user.id"))
-    ucret = Column(Float, nullable=True)
+    ucret = Column(Numeric(10, 2), nullable=True)
     resim = Column(String(255), nullable=True)
     olusturma_tarihi = Column(DateTime, default=datetime.now)
     guncelleme_tarihi = Column(DateTime, default=datetime.now, onupdate=datetime.now)
@@ -89,7 +90,7 @@ class Kayit(Base):
     __tablename__ = "kayitlar_kayit"
     
     id = Column(Integer, primary_key=True, index=True)
-    katilimci_id = Column(Integer, ForeignKey("katilimcilar_katilimci.id"))
+    katilimci_id = Column(Integer, ForeignKey("auth_user.id"))
     etkinlik_id = Column(Integer, ForeignKey("etkinlikler_etkinlik.id"))
     durum = Column(String(20), default="beklemede")
     kayit_turu = Column(String(20), default="normal")

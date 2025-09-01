@@ -27,8 +27,8 @@ pydantic
 
 # HTTP istekleri yapmak için
 requests
-# Çevre değişkenlerini yönetmek için (.env dosyası)
-python-decouple
+# CORS desteği için
+django-cors-headers
 
 # Resim işleme için (etkinlik resimleri)
 pillow

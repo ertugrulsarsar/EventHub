@@ -63,7 +63,23 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Veritabanını Oluştur
+### 3. Environment Variables Ayarla
+
+```bash
+# env.example dosyasını .env olarak kopyala
+# Windows:
+copy env.example .env
+
+# Linux/Mac:
+cp env.example .env
+```
+
+**Önemli**: `.env` dosyasını düzenleyerek kendi ayarlarınızı yapın:
+- `SECRET_KEY`: Production için güvenli bir anahtar oluşturun
+- `DEBUG`: Production'da `False` yapın
+- E-posta ayarları (isteğe bağlı)
+
+### 4. Veritabanını Oluştur
 
 ```bash
 # Django migrations
@@ -77,7 +93,7 @@ python manage.py create_sample_data
 python manage.py createsuperuser
 ```
 
-### 4. Sunucuları Başlat
+### 5. Sunucuları Başlat
 
 ```bash
 # Django sunucusu (Terminal 1)
@@ -142,7 +158,9 @@ etkinlik_yonetimi/
 │   └── etkinlik_resimleri/    # Etkinlik resimleri
 ├── main.py                    # FastAPI ana dosyası
 ├── manage.py                  # Django yönetim aracı
-└── requirements.txt           # Python bağımlılıkları
+├── requirements.txt           # Python bağımlılıkları
+├── env.example               # Environment variables örneği
+└── .env                      # Environment variables (oluşturulacak)
 ```
 
 ## 🔌 API Endpoint'leri
@@ -262,11 +280,46 @@ python manage.py create_sample_data
 
 ### Environment Variables
 
+Django projesi `python-decouple` kullanarak environment variable'ları yönetir. Bu güvenlik ve esneklik sağlar.
+
+#### **Geliştirme Ortamı (.env dosyası):**
+
+```bash
+# env.example dosyasını kopyalayın
+cp env.example .env
+
+# .env dosyasını düzenleyin
+nano .env  # veya editörünüzle açın
+```
+
+#### **Production Ortamı:**
+
 ```bash
 DEBUG=False
-SECRET_KEY=your-secret-key
-DATABASE_URL=postgresql://user:pass@localhost/dbname
-ALLOWED_HOSTS=yourdomain.com
+SECRET_KEY=your-super-secret-key-min-50-characters
+DATABASE_ENGINE=postgresql
+DATABASE_NAME=eventhub_db
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your-db-password
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+```
+
+#### **SECRET_KEY Oluşturma:**
+
+```bash
+python manage.py shell
+```
+
+```python
+from django.core.management.utils import get_random_secret_key
+print(get_random_secret_key())
 ```
 
 ## 🎯 Kullanım Senaryoları
